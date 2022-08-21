@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
-
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,6 +52,8 @@ class MyHomePage extends StatefulWidget {
 
   final String title;
 
+
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -56,28 +61,41 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   File? image;
+  late String base64string;
+  late String imagePath;
+  // String base64string;
+  final ImagePicker imgpicker = ImagePicker();
+  String imagepath = "";
+
   Future pickImage() async {
     try {
-      final image = await ImagePicker().pickImage(source: ImageSource.camera);
-
-      if (image == null) return;
-      final imagePermanant = await saveFilePermanantly(image.path);
-
-      // final imageTemp = File(image.path);
-      setState(() => this.image = imagePermanant);
-    }on PlatformException catch(e){
-       print("Failed: $e");
+      var pickedFile = await imgpicker.pickImage(source: ImageSource.camera);
+      //you can use ImageCourse.camera for Camera capture
+      if(pickedFile != null){
+        imagepath = pickedFile.path;
+        print(imagepath);//jpeg
+        File imagefile = File(imagepath);
+        Uint8List imagebytes = await imagefile.readAsBytes();
+        String base64string = base64.encode(imagebytes);
+        if (kDebugMode) {
+          debugPrint(base64string, wrapWidth: 100000);
+        }//base64
+        Uint8List decodedbytes = base64.decode(base64string);
+        String dir = (await getApplicationDocumentsDirectory()).path;
+        File file = File(
+          "$dir/"+DateTime.now().millisecondsSinceEpoch.toString()+".pdf"
+        );
+        print(file.path);
+        return file.path;
+        setState(() {
+        });
+      }else{
+        print("No image is selected.");
+      }
+    }catch (e) {
+      print("error while picking file.");
     }
   }
-
-  Future saveFilePermanantly(String imagePath) async{
-    final directory = await getApplicationDocumentsDirectory();
-    final name = basename(imagePath);
-    final image= File('${directory.path}/$name');
-
-    return File(imagePath).copy(image.path);
-  }
-
   @override
   Widget build(BuildContext context){
     return Scaffold(
